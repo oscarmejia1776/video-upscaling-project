@@ -1,0 +1,2 @@
+Method,Mean MSE,Mean PSNR,Mean SSIM
+Bicubic Upscaling,30.4602,34.51,0.9502

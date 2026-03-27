@@ -1,0 +1,161 @@
+"""
+04_visualize.py
+---------------
+Step 4: Generate side-by-side visual comparisons for the demo video.
+
+For each saved comparison we show three versions of the same frame:
+  LEFT   — Low-Resolution (LR) input
+  MIDDLE — Bicubic Upscaled (classical baseline)
+  RIGHT  — High-Resolution (HR) original (ground truth)
+
+This makes it easy to see what information is lost at low resolution
+and how well bicubic upscaling recovers it.
+
+We also read the classifier results and build a clean summary table image.
+
+How to run:
+    python 04_visualize.py  (after running 02_build_features.py and 03_train_models.py)
+"""
+
+import cv2
+import numpy as np
+import pandas as pd
+import os
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+# ─────────────────────────────────────────────
+# Paths
+# ─────────────────────────────────────────────
+HR_DIR       = "output/frames/hr"
+LR_DIR       = "output/frames/lr"
+IMAGES_DIR   = "output/images"
+RESULTS_DIR  = "output/results"
+os.makedirs(IMAGES_DIR, exist_ok=True)
+
+NUM_COMPARISONS = 5   # how many side-by-side images to save
+
+# ─────────────────────────────────────────────
+# Pick a few evenly-spaced frames to showcase
+# ─────────────────────────────────────────────
+hr_files = sorted(os.listdir(HR_DIR))
+
+if not hr_files:
+    print("No HR frames found. Run 01_extract_frames.py first.")
+    exit()
+
+# Choose frames spread across the whole dataset
+indices = np.linspace(0, len(hr_files) - 1, NUM_COMPARISONS, dtype=int)
+selected_files = [hr_files[i] for i in indices]
+
+print(f"Saving {NUM_COMPARISONS} side-by-side comparison images...")
+
+for i, filename in enumerate(selected_files):
+    hr_path = os.path.join(HR_DIR, filename)
+    lr_path = os.path.join(LR_DIR, filename)
+
+    hr_bgr = cv2.imread(hr_path)
+    lr_bgr = cv2.imread(lr_path)
+
+    if hr_bgr is None or lr_bgr is None:
+        print(f"  [SKIP] Could not read {filename}")
+        continue
+
+    # Bicubic upscale LR → HR size
+    h, w = hr_bgr.shape[:2]
+    bicubic = cv2.resize(lr_bgr, (w, h), interpolation=cv2.INTER_CUBIC)
+
+    # Also create a "zoomed" LR at HR size just for display (nearest neighbor = pixelated look)
+    lr_display = cv2.resize(lr_bgr, (w, h), interpolation=cv2.INTER_NEAREST)
+
+    # Convert BGR → RGB for matplotlib
+    lr_rgb      = cv2.cvtColor(lr_display, cv2.COLOR_BGR2RGB)
+    bicubic_rgb = cv2.cvtColor(bicubic,    cv2.COLOR_BGR2RGB)
+    hr_rgb      = cv2.cvtColor(hr_bgr,     cv2.COLOR_BGR2RGB)
+
+    # Build the side-by-side figure
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    fig.suptitle(f"Frame Comparison: {filename}", fontsize=12)
+
+    axes[0].imshow(lr_rgb);      axes[0].set_title("Low-Resolution Input",   fontsize=11)
+    axes[1].imshow(bicubic_rgb); axes[1].set_title("Bicubic Upscaled",        fontsize=11)
+    axes[2].imshow(hr_rgb);      axes[2].set_title("High-Resolution Original", fontsize=11)
+
+    for ax in axes:
+        ax.axis("off")
+
+    plt.tight_layout()
+    save_path = os.path.join(IMAGES_DIR, f"comparison_{i+1:02d}_{filename.replace('.png','')}.png")
+    plt.savefig(save_path, dpi=120)
+    plt.close()
+    print(f"  Saved: {save_path}")
+
+# ─────────────────────────────────────────────
+# Save a results summary table as an image
+# (handy to drop straight into your slides)
+# ─────────────────────────────────────────────
+results_path = os.path.join(RESULTS_DIR, "classifier_results.csv")
+if os.path.exists(results_path):
+    results_df = pd.read_csv(results_path)
+
+    fig, ax = plt.subplots(figsize=(11, 3))
+    ax.axis("off")
+
+    col_labels = list(results_df.columns)
+    cell_text  = results_df.values.tolist()
+
+    table = ax.table(
+        cellText  = cell_text,
+        colLabels = col_labels,
+        cellLoc   = "center",
+        loc       = "center",
+    )
+    table.auto_set_font_size(False)
+    table.set_fontsize(9)
+    table.scale(1.2, 1.8)
+
+    # Shade the header row
+    for col_idx in range(len(col_labels)):
+        table[0, col_idx].set_facecolor("#4472C4")
+        table[0, col_idx].set_text_props(color="white", fontweight="bold")
+
+    plt.title("Classifier Results Summary", fontsize=12, pad=15)
+    plt.tight_layout()
+    table_path = os.path.join(IMAGES_DIR, "results_table.png")
+    plt.savefig(table_path, dpi=150, bbox_inches="tight")
+    plt.close()
+    print(f"\nResults table image saved to: {table_path}")
+else:
+    print("\nNo classifier_results.csv found — run 03_train_models.py first.")
+
+# ─────────────────────────────────────────────
+# Save bicubic metrics table as image
+# ─────────────────────────────────────────────
+bicubic_path = os.path.join(RESULTS_DIR, "bicubic_metrics.csv")
+if os.path.exists(bicubic_path):
+    bdf = pd.read_csv(bicubic_path)
+
+    fig, ax = plt.subplots(figsize=(6, 1.5))
+    ax.axis("off")
+    table2 = ax.table(
+        cellText  = bdf.values.tolist(),
+        colLabels = list(bdf.columns),
+        cellLoc   = "center",
+        loc       = "center",
+    )
+    table2.auto_set_font_size(False)
+    table2.set_fontsize(10)
+    table2.scale(1.2, 2.0)
+    for col_idx in range(len(bdf.columns)):
+        table2[0, col_idx].set_facecolor("#70AD47")
+        table2[0, col_idx].set_text_props(color="white", fontweight="bold")
+
+    plt.title("Bicubic Upscaling Baseline Metrics", fontsize=11, pad=15)
+    plt.tight_layout()
+    bm_path = os.path.join(IMAGES_DIR, "bicubic_metrics_table.png")
+    plt.savefig(bm_path, dpi=150, bbox_inches="tight")
+    plt.close()
+    print(f"Bicubic metrics table saved to: {bm_path}")
+
+print("\nVisualization complete! Check output/images/ for all saved figures.")
