@@ -74,16 +74,36 @@ for i, filename in enumerate(selected_files):
     bicubic_rgb = cv2.cvtColor(bicubic,    cv2.COLOR_BGR2RGB)
     hr_rgb      = cv2.cvtColor(hr_bgr,     cv2.COLOR_BGR2RGB)
 
-    # Build the side-by-side figure
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-    fig.suptitle(f"Frame Comparison: {filename}", fontsize=12)
+    # Crop a zoomed patch from the center-ish of the frame to show detail difference
+    # We crop from the HR/bicubic images (same size) and the LR display
+    crop_h = h // 4
+    crop_w = w // 4
+    cy = h // 3        # slightly above center — usually more detail than dead center
+    cx = w // 2
+    y1, y2 = cy - crop_h // 2, cy + crop_h // 2
+    x1, x2 = cx - crop_w // 2, cx + crop_w // 2
 
-    axes[0].imshow(lr_rgb);      axes[0].set_title("Low-Resolution Input",   fontsize=11)
-    axes[1].imshow(bicubic_rgb); axes[1].set_title("Bicubic Upscaled",        fontsize=11)
-    axes[2].imshow(hr_rgb);      axes[2].set_title("High-Resolution Original", fontsize=11)
+    lr_crop      = lr_rgb[y1:y2,      x1:x2]
+    bicubic_crop = bicubic_rgb[y1:y2,  x1:x2]
+    hr_crop      = hr_rgb[y1:y2,       x1:x2]
 
-    for ax in axes:
-        ax.axis("off")
+    # Build the figure — top row: full frames, bottom row: zoomed crops
+    fig, axes = plt.subplots(2, 3, figsize=(15, 9))
+    fig.suptitle(f"Frame Comparison: {filename}", fontsize=13, fontweight="bold")
+
+    # Top row — full frames
+    axes[0][0].imshow(lr_rgb);      axes[0][0].set_title("Low-Resolution Input",    fontsize=11)
+    axes[0][1].imshow(bicubic_rgb); axes[0][1].set_title("Bicubic Upscaled",         fontsize=11)
+    axes[0][2].imshow(hr_rgb);      axes[0][2].set_title("High-Resolution Original", fontsize=11)
+
+    # Bottom row — zoomed crops (detail comparison)
+    axes[1][0].imshow(lr_crop);      axes[1][0].set_title("LR — Zoomed Crop",       fontsize=11)
+    axes[1][1].imshow(bicubic_crop); axes[1][1].set_title("Bicubic — Zoomed Crop",  fontsize=11)
+    axes[1][2].imshow(hr_crop);      axes[1][2].set_title("HR — Zoomed Crop",        fontsize=11)
+
+    for row in axes:
+        for ax in row:
+            ax.axis("off")
 
     plt.tight_layout()
     save_path = os.path.join(IMAGES_DIR, f"comparison_{i+1:02d}_{filename.replace('.png','')}.png")
