@@ -1,7 +1,0 @@
-Model,Accuracy,Precision,Recall,F1 Score,MSE,MAE
-K-Nearest Neighbors,0.9756,0.9545,1.0,0.9767,0.0244,0.0244
-Decision Tree,0.9756,1.0,0.9524,0.9756,0.0244,0.0244
-Random Forest,0.9756,1.0,0.9524,0.9756,0.0244,0.0244
-SVC,0.878,1.0,0.7619,0.8649,0.122,0.122
-Gaussian Naive Bayes,0.878,1.0,0.7619,0.8649,0.122,0.122
-Logistic Regression,0.8537,1.0,0.7143,0.8333,0.1463,0.1463

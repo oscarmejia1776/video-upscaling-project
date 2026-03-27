@@ -1,0 +1,18 @@
+# Virtual environment
+venv/
+
+# Generated output — run ./run_all.sh to regenerate these locally
+output/frames/
+output/images/
+output/results/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# OS files
+.DS_Store
+Thumbs.db
