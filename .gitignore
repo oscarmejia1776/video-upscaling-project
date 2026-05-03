@@ -5,6 +5,13 @@ venv/
 output/frames/
 output/images/
 output/results/
+output/models/
+output/report_figures/
+
+# Report and sample materials
+report.md
+generate_report_figures.py
+Sample reports/
 
 # Python cache
 __pycache__/
