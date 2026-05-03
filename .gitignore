@@ -7,6 +7,7 @@ output/images/
 output/results/
 output/models/
 output/report_figures/
+output/upscaled/
 
 # Report and sample materials
 report.md
