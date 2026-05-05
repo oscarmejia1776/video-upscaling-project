@@ -1,18 +1,3 @@
-"""
-06_visualize_srcnn.py
----------------------
-Step 6: Visualize SRCNN results against the bicubic baseline.
-
-For 5 evenly-spaced test frames generates a 4-panel color comparison:
-  Low-Resolution | Bicubic | SRCNN | Ground Truth HR
-
-Also generates a summary metrics table image comparing bicubic vs SRCNN.
-
-Outputs:
-  output/images/srcnn_comparison_01.png ... _05.png
-  output/images/srcnn_metrics_table.png
-"""
-
 import cv2
 import numpy as np
 import os
@@ -23,9 +8,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# ─────────────────────────────────────────────
 # Config
-# ─────────────────────────────────────────────
 HR_DIR      = "output/frames/hr"
 LR_DIR      = "output/frames/lr"
 IMAGES_DIR  = "output/images"
@@ -37,9 +20,7 @@ DISPLAY_H   = 540   # resize frames to this height for manageable figure size
 os.makedirs(IMAGES_DIR, exist_ok=True)
 
 
-# ─────────────────────────────────────────────
 # Model (must match 05_train_srcnn.py exactly)
-# ─────────────────────────────────────────────
 class SRCNN(nn.Module):
     def __init__(self):
         super().__init__()
@@ -54,15 +35,8 @@ class SRCNN(nn.Module):
         return self.conv3(x)
 
 
-# ─────────────────────────────────────────────
 # Helpers
-# ─────────────────────────────────────────────
 def reconstruct_color(lr_bgr, hr_bgr, model, device):
-    """
-    Apply SRCNN to the Y channel of the bicubic-upscaled LR frame, then
-    merge with the bicubic Cb/Cr channels to produce a full-color result.
-    Returns (bicubic_bgr, srcnn_bgr) as uint8 BGR images at HR resolution.
-    """
     h, w = hr_bgr.shape[:2]
     bicubic_bgr   = cv2.resize(lr_bgr, (w, h), interpolation=cv2.INTER_CUBIC)
     bicubic_ycrcb = cv2.cvtColor(bicubic_bgr, cv2.COLOR_BGR2YCrCb)
@@ -111,18 +85,16 @@ def save_comparison(lr_bgr, bicubic_bgr, srcnn_bgr, hr_bgr, save_path, idx):
     plt.close()
 
 
-# ─────────────────────────────────────────────
 # Main
-# ─────────────────────────────────────────────
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # ── Load model ──
+    # Load model
     model = SRCNN().to(device)
     model.load_state_dict(torch.load(MODEL_PATH, map_location=device, weights_only=True))
     print(f"Loaded SRCNN from {MODEL_PATH}")
 
-    # ── Identify test frames (same split as step 5) ──
+    # Identify test frames (same split as step 5)
     filenames  = sorted(os.listdir(HR_DIR))
     split      = int(len(filenames) * TRAIN_SPLIT)
     test_files = filenames[split:]
@@ -130,7 +102,7 @@ if __name__ == "__main__":
     sample_indices = np.linspace(0, len(test_files) - 1, 5, dtype=int)
     sample_files   = [test_files[i] for i in sample_indices]
 
-    # ── Comparison images ──
+    # Comparison images
     print("Generating comparison images...")
     for i, fname in enumerate(sample_files, start=1):
         hr_bgr = cv2.imread(os.path.join(HR_DIR, fname))
@@ -142,7 +114,7 @@ if __name__ == "__main__":
         save_comparison(lr_bgr, bicubic_bgr, srcnn_bgr, hr_bgr, save_path, i)
         print(f"  Saved {save_path}")
 
-    # ── Summary metrics table ──
+    # Summary metrics table
     print("Generating metrics table...")
     df = pd.read_csv(os.path.join(RESULTS_DIR, "srcnn_metrics.csv"))
 

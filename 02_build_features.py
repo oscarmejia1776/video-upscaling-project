@@ -1,25 +1,3 @@
-"""
-02_build_features.py
---------------------
-Step 2: Build a tabular feature dataset from the HR/LR frame pairs.
-
-For each frame pair we:
-  1. Bicubic-upscale the LR frame back to HR size (this is our classical baseline)
-  2. Compute simple image features on the LR frame (mean, std, gradient, sharpness, etc.)
-  3. Compute the Mean Squared Error (MSE) between the bicubic upscale and the true HR frame
-  4. Create a binary label:
-       - quality_label = 1  →  frame is HARD to reconstruct (MSE above median)
-       - quality_label = 0  →  frame is EASY to reconstruct (MSE below median)
-
-We also record the PSNR and SSIM for each bicubic reconstruction so we can
-report those as our "classical baseline" upscaling metrics.
-
-The final dataset is saved as output/results/features.csv.
-
-How to run:
-    python 02_build_features.py  (after running 01_extract_frames.py)
-"""
-
 import cv2
 import numpy as np
 import pandas as pd
@@ -27,9 +5,7 @@ import os
 from skimage.metrics import structural_similarity as ssim
 from skimage.metrics import peak_signal_noise_ratio as psnr
 
-# ─────────────────────────────────────────────
 # Paths
-# ─────────────────────────────────────────────
 HR_DIR      = "output/frames/hr"
 LR_DIR      = "output/frames/lr"
 RESULTS_DIR = "output/results"
@@ -37,28 +13,24 @@ os.makedirs(RESULTS_DIR, exist_ok=True)
 
 
 def compute_features(lr_frame_gray, hr_frame_gray, bicubic_frame_gray):
-    """
-    Compute simple numerical features from a grayscale LR frame.
-    Also compute MSE, PSNR, and SSIM comparing bicubic vs true HR.
-    Returns a dictionary of values.
-    """
-    # ── Basic pixel statistics on the LR frame ──
+
+    # Basic pixel statistics on the LR frame
     mean_pixel  = float(np.mean(lr_frame_gray))
     std_pixel   = float(np.std(lr_frame_gray))
     min_pixel   = float(np.min(lr_frame_gray))
     max_pixel   = float(np.max(lr_frame_gray))
     contrast    = max_pixel - min_pixel
 
-    # ── Sharpness: Laplacian variance (higher = sharper) ──
+    # Sharpness: Laplacian variance (higher = sharper)
     laplacian   = cv2.Laplacian(lr_frame_gray, cv2.CV_64F)
     sharpness   = float(laplacian.var())
 
-    # ── Edge energy: mean gradient magnitude (Sobel) ──
+    # Edge energy: mean gradient magnitude (Sobel)
     sobel_x     = cv2.Sobel(lr_frame_gray, cv2.CV_64F, 1, 0, ksize=3)
     sobel_y     = cv2.Sobel(lr_frame_gray, cv2.CV_64F, 0, 1, ksize=3)
     gradient    = float(np.mean(np.sqrt(sobel_x**2 + sobel_y**2)))
 
-    # ── Reconstruction quality: comparing bicubic vs original HR ──
+    # Reconstruction quality: comparing bicubic vs original HR
     mse_val     = float(np.mean((bicubic_frame_gray.astype(float) - hr_frame_gray.astype(float))**2))
 
     # PSNR — standard image quality metric (higher is better)
@@ -81,9 +53,7 @@ def compute_features(lr_frame_gray, hr_frame_gray, bicubic_frame_gray):
     }
 
 
-# ─────────────────────────────────────────────
 # Main — loop over all frame pairs
-# ─────────────────────────────────────────────
 if __name__ == "__main__":
     hr_files = sorted(os.listdir(HR_DIR))
     lr_files = sorted(os.listdir(LR_DIR))
@@ -120,10 +90,10 @@ if __name__ == "__main__":
         feat["filename"] = filename
         rows.append(feat)
 
-    # ── Build DataFrame ──
+    # Build DataFrame 
     df = pd.DataFrame(rows)
 
-    # ── Create binary quality label based on median MSE ──
+    #  Create binary quality label based on median MSE
     # Frames with MSE above the median are "harder" to reconstruct
     median_mse = df["mse"].median()
     df["quality_label"] = (df["mse"] > median_mse).astype(int)
@@ -132,13 +102,13 @@ if __name__ == "__main__":
     print(f"  Label 0 (easy to reconstruct): {(df['quality_label'] == 0).sum()} frames")
     print(f"  Label 1 (hard to reconstruct): {(df['quality_label'] == 1).sum()} frames")
 
-    # ── Save the dataset ──
+    # Save the dataset
     out_path = os.path.join(RESULTS_DIR, "features.csv")
     df.to_csv(out_path, index=False)
     print(f"\nSaved features to: {out_path}")
     print(f"Columns: {list(df.columns)}")
 
-    # ── Print a quick summary of bicubic baseline metrics ──
+    # Print a quick summary of bicubic baseline metrics
     print("\n── Bicubic Upscaling Baseline (Classical Method) ──")
     print(f"  Mean MSE  : {df['mse'].mean():.4f}")
     print(f"  Mean PSNR : {df['psnr'].mean():.2f} dB")

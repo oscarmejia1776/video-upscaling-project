@@ -1,22 +1,3 @@
-"""
-04_visualize.py
----------------
-Step 4: Generate side-by-side visual comparisons for the demo video.
-
-For each saved comparison we show three versions of the same frame:
-  LEFT   — Low-Resolution (LR) input
-  MIDDLE — Bicubic Upscaled (classical baseline)
-  RIGHT  — High-Resolution (HR) original (ground truth)
-
-This makes it easy to see what information is lost at low resolution
-and how well bicubic upscaling recovers it.
-
-We also read the classifier results and build a clean summary table image.
-
-How to run:
-    python 04_visualize.py  (after running 02_build_features.py and 03_train_models.py)
-"""
-
 import cv2
 import numpy as np
 import pandas as pd
@@ -25,9 +6,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# ─────────────────────────────────────────────
 # Paths
-# ─────────────────────────────────────────────
 HR_DIR       = "output/frames/hr"
 LR_DIR       = "output/frames/lr"
 IMAGES_DIR   = "output/images"
@@ -36,9 +15,7 @@ os.makedirs(IMAGES_DIR, exist_ok=True)
 
 NUM_COMPARISONS = 5   # how many side-by-side images to save
 
-# ─────────────────────────────────────────────
 # Pick a few evenly-spaced frames to showcase
-# ─────────────────────────────────────────────
 hr_files = sorted(os.listdir(HR_DIR))
 
 if not hr_files:
@@ -78,7 +55,7 @@ for i, filename in enumerate(selected_files):
     # We crop from the HR/bicubic images (same size) and the LR display
     crop_h = h // 4
     crop_w = w // 4
-    cy = h // 3        # slightly above center — usually more detail than dead center
+    cy = h // 3 
     cx = w // 2
     y1, y2 = cy - crop_h // 2, cy + crop_h // 2
     x1, x2 = cx - crop_w // 2, cx + crop_w // 2
@@ -111,10 +88,8 @@ for i, filename in enumerate(selected_files):
     plt.close()
     print(f"  Saved: {save_path}")
 
-# ─────────────────────────────────────────────
 # Save a results summary table as an image
 # (handy to drop straight into your slides)
-# ─────────────────────────────────────────────
 results_path = os.path.join(RESULTS_DIR, "classifier_results.csv")
 if os.path.exists(results_path):
     results_df = pd.read_csv(results_path)
@@ -149,9 +124,7 @@ if os.path.exists(results_path):
 else:
     print("\nNo classifier_results.csv found — run 03_train_models.py first.")
 
-# ─────────────────────────────────────────────
 # Save bicubic metrics table as image
-# ─────────────────────────────────────────────
 bicubic_path = os.path.join(RESULTS_DIR, "bicubic_metrics.csv")
 if os.path.exists(bicubic_path):
     bdf = pd.read_csv(bicubic_path)

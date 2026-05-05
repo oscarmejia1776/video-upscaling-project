@@ -1,21 +1,3 @@
-"""
-05_train_srcnn.py
------------------
-Step 5: Train a minimal SRCNN (Super-Resolution CNN) in PyTorch.
-
-Architecture: Dong et al. 2014, 3 convolutional layers
-  Conv(1->64, 9x9, pad=4) + ReLU  -- patch extraction
-  Conv(64->32, 1x1) + ReLU        -- non-linear mapping
-  Conv(32->1, 5x5, pad=2)         -- reconstruction
-
-Trains on grayscale Y-channel patches extracted from existing HR/LR frame pairs.
-Evaluates on full test frames and compares per-frame PSNR/SSIM vs bicubic baseline.
-
-Outputs:
-  output/models/srcnn.pth          -- trained model weights
-  output/results/srcnn_metrics.csv -- per-frame PSNR/SSIM comparison table
-"""
-
 import cv2
 import numpy as np
 import os
@@ -26,9 +8,7 @@ from torch.utils.data import Dataset, DataLoader
 from skimage.metrics import structural_similarity as ssim_metric
 from skimage.metrics import peak_signal_noise_ratio as psnr_metric
 
-# ─────────────────────────────────────────────
 # Config
-# ─────────────────────────────────────────────
 HR_DIR      = "output/frames/hr"
 LR_DIR      = "output/frames/lr"
 MODELS_DIR  = "output/models"
@@ -45,9 +25,8 @@ os.makedirs(MODELS_DIR, exist_ok=True)
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
 
-# ─────────────────────────────────────────────
+
 # Model
-# ─────────────────────────────────────────────
 class SRCNN(nn.Module):
     def __init__(self):
         super().__init__()
@@ -62,12 +41,10 @@ class SRCNN(nn.Module):
         return self.conv3(x)
 
 
-# ─────────────────────────────────────────────
 # Dataset
-# ─────────────────────────────────────────────
 class PatchDataset(Dataset):
     def __init__(self, inputs, targets):
-        self.inputs  = torch.from_numpy(np.stack(inputs))   # (N, 1, P, P)
+        self.inputs  = torch.from_numpy(np.stack(inputs))
         self.targets = torch.from_numpy(np.stack(targets))
 
     def __len__(self):
@@ -77,9 +54,7 @@ class PatchDataset(Dataset):
         return self.inputs[idx], self.targets[idx]
 
 
-# ─────────────────────────────────────────────
 # Helpers
-# ─────────────────────────────────────────────
 def bgr_to_y(bgr_img):
     """Return Y channel (luminance) of a BGR image, float32 normalized to [0, 1]."""
     ycrcb = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2YCrCb)
@@ -123,14 +98,12 @@ def compute_psnr_ssim(ref_uint8, pred_uint8):
     return p, s
 
 
-# ─────────────────────────────────────────────
 # Main
-# ─────────────────────────────────────────────
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
 
-    # ── Frame split ──
+    #  Frame split 
     filenames   = sorted(os.listdir(HR_DIR))
     n           = len(filenames)
     split       = int(n * TRAIN_SPLIT)
@@ -138,7 +111,7 @@ if __name__ == "__main__":
     test_files  = filenames[split:]
     print(f"Frames: {n} total | {len(train_files)} train | {len(test_files)} test")
 
-    # ── Extract training patches ──
+    #  Extract training patches
     print("Extracting training patches...")
     all_inputs, all_targets = [], []
     for fname in train_files:
@@ -153,7 +126,7 @@ if __name__ == "__main__":
     loader  = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
     print(f"  {len(dataset)} patches | {len(loader)} batches/epoch")
 
-    # ── Train ──
+    #  Train
     model     = SRCNN().to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=LR_RATE)
     criterion = nn.MSELoss()
@@ -177,7 +150,7 @@ if __name__ == "__main__":
     torch.save(model.state_dict(), model_path)
     print(f"\nModel saved to {model_path}")
 
-    # ── Evaluate on test frames ──
+    # Evaluate on test frames
     print("\nEvaluating on test frames...")
     rows = []
     for fname in test_files:

@@ -1,20 +1,3 @@
-"""
-07_upscale_video.py
--------------------
-Apply the trained SRCNN model to every frame of a video and write a 4x
-upscaled MP4 output.
-
-Usage:
-    python 07_upscale_video.py                        # uses first video in data/videos/
-    python 07_upscale_video.py path/to/video.mp4      # specific input file
-
-Output:
-    output/upscaled/<input_stem>_srcnn.mp4
-
-NOTE: Processing runs on CPU and takes roughly 1-2 seconds per frame.
-A 30-second clip at 30 fps (~900 frames) will take 15-30 minutes.
-"""
-
 import cv2
 import glob
 import numpy as np
@@ -31,9 +14,7 @@ SCALE       = 4
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
-# ─────────────────────────────────────────────
 # Model (must match 05_train_srcnn.py exactly)
-# ─────────────────────────────────────────────
 class SRCNN(nn.Module):
     def __init__(self):
         super().__init__()
@@ -49,10 +30,6 @@ class SRCNN(nn.Module):
 
 
 def upscale_frame(bgr_frame, model, device):
-    """
-    4x upscale a single BGR frame using bicubic + SRCNN Y-channel refinement.
-    Returns a BGR uint8 image at 4x the input resolution.
-    """
     h, w = bgr_frame.shape[:2]
     out_h, out_w = h * SCALE, w * SCALE
 
@@ -93,7 +70,7 @@ if __name__ == "__main__":
     stem        = os.path.splitext(os.path.basename(input_path))[0]
     output_path = os.path.join(OUTPUT_DIR, f"{stem}_srcnn.mp4")
 
-    # ── Load video metadata ──
+    # Load video metadata
     cap       = cv2.VideoCapture(input_path)
     fps       = cap.get(cv2.CAP_PROP_FPS)
     in_w      = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -109,17 +86,17 @@ if __name__ == "__main__":
     print(f"\nEstimated time on CPU: ~{est_minutes:.0f} minutes ({n_frames} frames @ ~1.5 s/frame)")
     print("Processing...\n")
 
-    # ── Load model ──
+    # Load model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model  = SRCNN().to(device)
     model.load_state_dict(torch.load(MODEL_PATH, map_location=device, weights_only=True))
     model.eval()
 
-    # ── Open writer ──
+    # Open writer
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     writer = cv2.VideoWriter(output_path, fourcc, fps, (out_w, out_h))
 
-    # ── Process frames ──
+    # Process frames
     start     = time.time()
     processed = 0
 

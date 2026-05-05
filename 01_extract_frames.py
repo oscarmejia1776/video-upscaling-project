@@ -1,35 +1,17 @@
-"""
-01_extract_frames.py
---------------------
-Step 1: Load video files and extract frames.
-
-We extract every Nth frame from each video to keep the dataset manageable.
-Each extracted frame is saved as a high-resolution (HR) image.
-We then downscale each HR frame by a factor of 4 to create a
-low-resolution (LR) version, simulating a real-world super-resolution scenario.
-
-How to run:
-    python 01_extract_frames.py
-
-Place your .mp4 video files in the data/videos/ folder before running.
-"""
-
 import cv2
 import os
 
 # ─────────────────────────────────────────────
 # Configuration — adjust these if needed
 # ─────────────────────────────────────────────
-VIDEO_DIR   = "data/videos"          # folder with your .mp4 files
+VIDEO_DIR   = "data/videos"          # folder with .mp4 files
 HR_DIR      = "output/frames/hr"    # where high-res frames will be saved
 LR_DIR      = "output/frames/lr"    # where low-res frames will be saved
 FRAME_STEP  = 10                     # extract every 10th frame
 SCALE       = 4                      # downscale factor for creating LR frames
 MAX_FRAMES  = 500                    # cap total frames to keep things fast
 
-# ─────────────────────────────────────────────
 # Make sure output directories exist
-# ─────────────────────────────────────────────
 os.makedirs(HR_DIR, exist_ok=True)
 os.makedirs(LR_DIR, exist_ok=True)
 
@@ -89,9 +71,7 @@ def extract_frames(video_path, start_index=0):
     return global_index
 
 
-# ─────────────────────────────────────────────
 # Main — process all videos in VIDEO_DIR
-# ─────────────────────────────────────────────
 if __name__ == "__main__":
     video_files = [f for f in os.listdir(VIDEO_DIR) if f.endswith(".mp4")]
 
